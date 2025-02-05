@@ -1,0 +1,125 @@
+version: '3.8'
+
+networks:
+  container-link:
+    driver: bridge
+
+services:
+  user-frontend:
+    container_name: user-frontend
+    build:
+      context: .
+      dockerfile: ./docker/Nuxt/Dockerfile
+    volumes:
+      - ./src/user-frontend:/app:chached
+      - ./resources/:/resources
+      # - ./nuxt_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    tty: true
+    depends_on:
+      - user-backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - container-link
+    command: [sh, -c, npm install && npm run dev -- -o -p 3000]
+    
+
+  user-backend:
+    container_name: user-backend
+    build:
+      context: .
+      dockerfile: ./docker/Express/Dockerfile
+    volumes:
+      - ./src/user-backend:/api
+      - ./resources/:/resources
+    ports:
+      - "3001:3001"
+    environment:
+      TZ: Asia/Tokyo
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_USER: mitsuka
+      DB_PASSWORD: mitsuka
+      DB_DATABASE: mitsuka_db
+    tty: true
+    depends_on:
+      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - container-link
+    working_dir: /api
+    command: [sh, -c, npm install && node app.js]
+
+  manage-frontend:
+    container_name: manage-frontend
+    build:
+      context: .
+      dockerfile: ./docker/Nuxt/Dockerfile
+    volumes:
+      - ./src/manage-frontend:/app:chached
+      - ./resources/:/resources
+      # - ./nuxt_node_modules:/app/node_modules
+    ports:
+      - "4000:4000"
+    tty: true
+    depends_on:
+      - manage-backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - container-link
+    command: [sh, -c, npm install &&  npm run dev -- -o -p 4000]
+
+  manage-backend:
+    container_name: manage-backend
+    build:
+      context: .
+      dockerfile: ./docker/Express/Dockerfile
+    volumes:
+      - ./src/manage-backend:/api
+      - ./resources/:/resources
+    ports:
+      - "4001:4001"
+    environment:
+      TZ: Asia/Tokyo
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_USER: mitsuka
+      DB_PASSWORD: mitsuka
+      DB_DATABASE: mitsuka_db
+    tty: true
+    depends_on:
+      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - container-link
+    working_dir: /api
+    command: [sh, -c, npm install && node app.js]
+
+  db:
+    image: mysql:8
+    container_name: db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mitsuka_db
+      MYSQL_USER: mitsuka
+      MYSQL_PASSWORD: mitsuka
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./database/db-store:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/conf:/etc/mysql/conf.d
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - container-link
+
+volumes:
+  mysql-data:
