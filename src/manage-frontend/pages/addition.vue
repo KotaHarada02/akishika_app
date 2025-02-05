@@ -212,7 +212,7 @@ export default {
       })
       .catch((error) => {
         console.error("エラー:", error);
-        alert("アップロードに失敗しました。");
+        alert("アップロードに失敗しました.");
       });
     },
   },
